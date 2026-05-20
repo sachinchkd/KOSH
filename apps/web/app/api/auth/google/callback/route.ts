@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 const TEMP_TOKEN_KEY = "coop_tmp_token";
 
@@ -13,7 +12,7 @@ export async function POST(req: NextRequest) {
 
   if (!credential || typeof credential !== "string") {
     return NextResponse.redirect(
-      `${baseUrl}/login?error=missing_google_credential`
+      `${baseUrl}/login?error=missing_google_credential`,
     );
   }
 
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
       console.error("Backend Google login failed:", data);
 
       return NextResponse.redirect(
-        `${baseUrl}/login?error=backend_login_failed`
+        `${baseUrl}/login?error=backend_login_failed`,
       );
     }
 
@@ -40,8 +39,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.redirect(`${baseUrl}/login?error=no_access_token`);
     }
 
-    const res = NextResponse.redirect(`${baseUrl}/auth/google/finish`);
-
+    const res = NextResponse.redirect(`${baseUrl}/auth/google/finish`, {
+      status: 303,
+    });
     res.cookies.set(TEMP_TOKEN_KEY, data.access_token, {
       path: "/",
       maxAge: 60,
