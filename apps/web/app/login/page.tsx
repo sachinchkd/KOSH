@@ -67,6 +67,8 @@ export default function LoginPage() {
               text="signin_with"
               shape="rectangular"
               logo_alignment="left"
+              ux_mode="redirect"
+              login_uri="https://kosh-web-chi.vercel.app/api/auth/google/callback"
               onError={() =>
                 setError("Google sign-in was cancelled or failed.")
               }
@@ -88,7 +90,9 @@ export default function LoginPage() {
           ) : null}
 
           <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-            This release is intended for initial testing and feedback. Core features are functional, but improvements may be made as the system is used by members and admins.
+            This release is intended for initial testing and feedback. Core
+            features are functional, but improvements may be made as the system
+            is used by members and admins.
           </div>
         </CardContent>
       </Card>
