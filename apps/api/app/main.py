@@ -21,7 +21,10 @@ app.add_middleware(
     "https://kosh-web-chi.vercel.app",
     "https://sachinchakradhar.com.np",
     "https://www.sachinchakradhar.com.np",
-]
+],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
     
 )
 
