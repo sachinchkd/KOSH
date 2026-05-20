@@ -1,30 +1,39 @@
 "use client";
 
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from "react";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { api, setToken } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@coop.local");
-  const [password, setPassword] = useState("admin12345");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    setLoading(true);
+  async function handleGoogleSuccess(response: CredentialResponse) {
     setError(null);
+
+    if (!response.credential) {
+      setError("Google sign-in failed. No credential was returned.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const data = await api.login(email, password);
+      const data = await api.googleLogin(response.credential);
       setToken(data.access_token);
       router.replace("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : "Google login failed");
     } finally {
       setLoading(false);
     }
@@ -35,25 +44,34 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>COOP Saving Login</CardTitle>
-          <CardDescription>Manage monthly saving records for your group.</CardDescription>
+          <CardDescription>
+            Sign in with your registered Gmail account.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
+
+        <CardContent className="space-y-4">
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("Google sign-in was cancelled or failed.")}
+              useOneTap
+            />
+          </div>
+
+          {loading ? (
+            <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+              Signing you in...
             </div>
-            <div className="space-y-2">
-              <Label>Password</Label>
-              <Input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required />
+          ) : null}
+
+          {error ? (
+            <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+              {error}
             </div>
-            {error ? <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
-            <Button className="w-full" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
-            </Button>
-          </form>
-          <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-            Seed first with <code>uv run python -m app.seed</code>. Default admin is already filled.
+          ) : null}
+
+          <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
+            Only Gmail accounts listed in the Google Sheet Members tab can access this app.
           </div>
         </CardContent>
       </Card>

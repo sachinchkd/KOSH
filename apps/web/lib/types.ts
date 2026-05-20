@@ -4,6 +4,7 @@ export type User = {
   email: string;
   phone?: string | null;
   role: "admin" | "member" | string;
+  
 };
 
 export type Member = User & {

@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { QueryProvider } from "@/components/query-provider";
+
+import { Providers } from "./providers/page";
+
+
+
 
 export const metadata: Metadata = {
-  title: "COOP Saving App",
+  title: "KOSH",
   description: "Friendly saving management app"
 };
 
@@ -11,7 +15,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <QueryProvider>{children}</QueryProvider>
+        
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -1,32 +1,55 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from pydantic import BaseModel, EmailStr
 
-from app.core.security import decode_access_token
-from app.db.session import get_db
-from app.models.user import User
-
-bearer_scheme = HTTPBearer(auto_error=False)
+from app.core.config import settings
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
-) -> User:
-    if credentials is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-
-    user_id = decode_access_token(credentials.credentials)
-    if user_id is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
-    user = db.get(User, int(user_id))
-    if user is None or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
-    return user
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/google")
 
 
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
+class CurrentUser(BaseModel):
+    id: str
+    email: EmailStr
+    name: str = ""
+    role: str = "member"
+    picture: str = ""
+    is_active: bool = True
+
+
+def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+        )
+
+    email = payload.get("sub")
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+        )
+
+    return CurrentUser(
+        id=str(email),
+        email=str(email),
+        name=str(payload.get("name", "")),
+        role=str(payload.get("role", "member")),
+        picture=str(payload.get("picture", "")),
+        is_active=True,
+    )
+
+
+def require_admin(current_user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
     if current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+
     return current_user

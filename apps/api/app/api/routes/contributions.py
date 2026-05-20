@@ -1,168 +1,201 @@
 from datetime import datetime
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.deps import get_current_user, require_admin
-from app.core.config import get_settings
-from app.db.session import get_db
-from app.models.contribution import Contribution
-from app.models.user import User
-from app.schemas.contributions import ContributionOut, ContributionStatusUpdate
-from app.services.audit import write_audit
-from app.services.google import append_contribution_to_sheet, upload_file_to_drive
+from app.services.google import append_sheet_row, read_sheet_rows, update_sheet_row, upload_file_to_drive
 from app.services.storage import save_upload
 
-settings = get_settings()
 router = APIRouter(prefix="/contributions", tags=["contributions"])
 
 
-def _out(contribution: Contribution) -> ContributionOut:
-    return ContributionOut(
-        id=contribution.id,
-        member_id=contribution.member_id,
-        member_name=contribution.member.name,
-        month=contribution.month,
-        amount=contribution.amount,
-        payment_method=contribution.payment_method,
-        status=contribution.status,
-        photo_url=contribution.photo_url,
-        remarks=contribution.remarks,
-        submitted_at=contribution.submitted_at,
-        approved_at=contribution.approved_at,
-        approved_by_name=contribution.approved_by.name if contribution.approved_by else None,
-        google_sheet_row_id=contribution.google_sheet_row_id,
-    )
+CONTRIBUTION_HEADERS = [
+    "ID",
+    "Member Email",
+    "Member Name",
+    "Month",
+    "Year",
+    "Amount",
+    "Payment Method",
+    "Status",
+    "Photo URL",
+    "Browser Date",
+    "Submitted At",
+    "Approved At",
+    "Approved By",
+    "Remarks",
+]
 
 
-@router.get("", response_model=list[ContributionOut])
+def _now() -> str:
+    return datetime.utcnow().isoformat(timespec="seconds") + "Z"
+
+
+def _normalize(value: str | None) -> str:
+    return str(value or "").strip()
+
+
+def _row_to_out(row: dict) -> dict:
+    return {
+        "id": row.get("ID", ""),
+        "member_email": row.get("Member Email", ""),
+        "member_name": row.get("Member Name", ""),
+        "month": row.get("Month", ""),
+        "year": row.get("Year", ""),
+        "amount": int(row.get("Amount") or 0),
+        "payment_method": row.get("Payment Method", ""),
+        "status": row.get("Status", ""),
+        "photo_url": row.get("Photo URL", ""),
+        "browser_date": row.get("Browser Date", ""),
+        "submitted_at": row.get("Submitted At", ""),
+        "approved_at": row.get("Approved At", ""),
+        "approved_by": row.get("Approved By", ""),
+        "remarks": row.get("Remarks", ""),
+    }
+
+
+def _contribution_row(data: dict) -> list:
+    return [
+        data.get("ID", ""),
+        data.get("Member Email", ""),
+        data.get("Member Name", ""),
+        data.get("Month", ""),
+        data.get("Year", ""),
+        data.get("Amount", ""),
+        data.get("Payment Method", ""),
+        data.get("Status", ""),
+        data.get("Photo URL", ""),
+        data.get("Browser Date", ""),
+        data.get("Submitted At", ""),
+        data.get("Approved At", ""),
+        data.get("Approved By", ""),
+        data.get("Remarks", ""),
+    ]
+
+
+@router.get("")
 def list_contributions(
     status_filter: str | None = None,
     month: str | None = None,
-    member_id: int | None = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-    query = db.query(Contribution)
+    rows = read_sheet_rows("Contributions")
 
     if current_user.role != "admin":
-        query = query.filter(Contribution.member_id == current_user.id)
-    elif member_id is not None:
-        query = query.filter(Contribution.member_id == member_id)
+        rows = [
+            row for row in rows
+            if _normalize(row.get("Member Email")).lower() == current_user.email.lower()
+        ]
 
     if status_filter:
-        query = query.filter(Contribution.status == status_filter)
+        rows = [
+            row for row in rows
+            if _normalize(row.get("Status")).lower() == status_filter.lower()
+        ]
+
     if month:
-        query = query.filter(Contribution.month == month)
+        rows = [
+            row for row in rows
+            if _normalize(row.get("Month")) == month
+        ]
 
-    contributions = query.order_by(Contribution.submitted_at.desc()).all()
-    return [_out(item) for item in contributions]
+    return [_row_to_out(row) for row in reversed(rows)]
 
 
-@router.post("", response_model=ContributionOut, status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_contribution(
-    member_id: int | None = Form(default=None),
     month: str = Form(...),
+    year: str = Form(...),
+    browser_date: str = Form(...),
     amount: int = Form(default=1000),
-    payment_method: str = Form(default="Cash"),
+    payment_method: str = Form(default="Online"),
     remarks: str | None = Form(default=None),
     photo: UploadFile | None = File(default=None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-    if len(month) != 7 or month[4] != "-":
-        raise HTTPException(status_code=400, detail="Month must use YYYY-MM format")
+    photo_url = ""
 
-    target_member_id = member_id if current_user.role == "admin" and member_id else current_user.id
-    member = db.get(User, target_member_id)
-    if member is None or not member.is_active:
-        raise HTTPException(status_code=404, detail="Member not found")
-
-    existing = (
-        db.query(Contribution)
-        .filter(Contribution.member_id == target_member_id, Contribution.month == month, Contribution.status != "rejected")
-        .first()
-    )
-    if existing:
-        raise HTTPException(status_code=400, detail="A non-rejected contribution already exists for this member and month")
-
-    photo_url = None
     if photo is not None:
         stored = await save_upload(photo)
-        photo_url = stored.public_url
-        try:
-            drive_url = upload_file_to_drive(stored.path, stored.filename, photo.content_type)
-            if drive_url:
-                photo_url = drive_url
-        except Exception:
-            # Local upload still works even if Google Drive is not configured correctly.
-            photo_url = stored.public_url
+        photo_url = upload_file_to_drive(
+            str(stored.path),
+            stored.filename,
+            photo.content_type,
+        )
 
-    contribution = Contribution(
-        member_id=target_member_id,
-        month=month,
-        amount=amount,
-        payment_method=payment_method,
-        photo_url=photo_url,
-        remarks=remarks,
-        status="pending",
-    )
-    db.add(contribution)
-    db.flush()
-    write_audit(db, "contribution.created", current_user, "contribution", contribution.id)
+    contribution_id = str(uuid4())
 
-    try:
-        row_id = append_contribution_to_sheet(contribution, member)
-        contribution.google_sheet_row_id = row_id
-    except Exception:
-        contribution.google_sheet_row_id = None
+    data = {
+        "ID": contribution_id,
+        "Member Email": current_user.email,
+        "Member Name": current_user.name or current_user.email,
+        "Month": month,
+        "Year": year,
+        "Amount": amount,
+        "Payment Method": payment_method,
+        "Status": "Pending",
+        "Photo URL": photo_url,
+        "Browser Date": browser_date,
+        "Submitted At": _now(),
+        "Approved At": "",
+        "Approved By": "",
+        "Remarks": remarks or "",
+    }
 
-    db.commit()
-    db.refresh(contribution)
-    return _out(contribution)
+    append_sheet_row("Contributions", _contribution_row(data))
+
+    return _row_to_out(data)
 
 
-@router.patch("/{contribution_id}/approve", response_model=ContributionOut)
+@router.patch("/{contribution_id}/approve")
 def approve_contribution(
-    contribution_id: int,
-    payload: ContributionStatusUpdate | None = None,
-    db: Session = Depends(get_db),
-    admin: User = Depends(require_admin),
+    contribution_id: str,
+    admin=Depends(require_admin),
 ):
-    contribution = db.get(Contribution, contribution_id)
-    if contribution is None:
-        raise HTTPException(status_code=404, detail="Contribution not found")
+    rows = read_sheet_rows("Contributions")
 
-    contribution.status = "approved"
-    contribution.approved_at = datetime.utcnow()
-    contribution.approved_by_id = admin.id
-    if payload and payload.remarks:
-        contribution.remarks = payload.remarks
+    for row in rows:
+        if row.get("ID") == contribution_id:
+            row["Status"] = "Approved"
+            row["Approved At"] = _now()
+            row["Approved By"] = admin.email
 
-    write_audit(db, "contribution.approved", admin, "contribution", contribution.id)
-    db.commit()
-    db.refresh(contribution)
-    return _out(contribution)
+            update_sheet_row(
+                "Contributions",
+                row["_row_number"],
+                _contribution_row(row),
+            )
+
+            return _row_to_out(row)
+
+    raise HTTPException(status_code=404, detail="Contribution not found")
 
 
-@router.patch("/{contribution_id}/reject", response_model=ContributionOut)
+@router.patch("/{contribution_id}/reject")
 def reject_contribution(
-    contribution_id: int,
-    payload: ContributionStatusUpdate | None = None,
-    db: Session = Depends(get_db),
-    admin: User = Depends(require_admin),
+    contribution_id: str,
+    remarks: str | None = None,
+    admin=Depends(require_admin),
 ):
-    contribution = db.get(Contribution, contribution_id)
-    if contribution is None:
-        raise HTTPException(status_code=404, detail="Contribution not found")
+    rows = read_sheet_rows("Contributions")
 
-    contribution.status = "rejected"
-    contribution.approved_at = None
-    contribution.approved_by_id = None
-    if payload and payload.remarks:
-        contribution.remarks = payload.remarks
+    for row in rows:
+        if row.get("ID") == contribution_id:
+            row["Status"] = "Rejected"
+            row["Approved At"] = _now()
+            row["Approved By"] = admin.email
 
-    write_audit(db, "contribution.rejected", admin, "contribution", contribution.id)
-    db.commit()
-    db.refresh(contribution)
-    return _out(contribution)
+            if remarks:
+                row["Remarks"] = remarks
+
+            update_sheet_row(
+                "Contributions",
+                row["_row_number"],
+                _contribution_row(row),
+            )
+
+            return _row_to_out(row)
+
+    raise HTTPException(status_code=404, detail="Contribution not found")
