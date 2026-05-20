@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "COOP Saving API"
+    app_name: str = "KOSH Saving API"
     environment: str = "development"
 
     secret_key: str = "change-this-secret-in-production"

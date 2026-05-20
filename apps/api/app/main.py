@@ -12,11 +12,15 @@ import app.models  # noqa: F401
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name)
+app = FastAPI(title="KOSH Saving API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://koshsaving.com",
+        "https://www.koshsaving.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

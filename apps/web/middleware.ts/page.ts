@@ -7,6 +7,7 @@ const protectedRoutes = [
   "/members",
   "/contributions",
   "/reports",
+  "/settings",
 ];
 
 export function middleware(request: NextRequest) {
@@ -14,12 +15,12 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get(TOKEN_KEY)?.value;
 
   const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route),
+    pathname === route || pathname.startsWith(`${route}/`)
   );
 
   if (pathname === "/") {
     return NextResponse.redirect(
-      new URL(token ? "/dashboard" : "/login", request.url),
+      new URL(token ? "/dashboard" : "/login", request.url)
     );
   }
 
@@ -42,5 +43,6 @@ export const config = {
     "/members/:path*",
     "/contributions/:path*",
     "/reports/:path*",
+    "/settings/:path*",
   ],
 };

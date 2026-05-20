@@ -51,22 +51,45 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set("Authorization", `Bearer ${authToken}`);
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const controller = new AbortController();
 
-  const data = await response.json().catch(() => null);
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 15000);
 
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      clearToken();
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        clearToken();
+      }
+
+      const message = Array.isArray(data?.detail)
+        ? data.detail.map((item: any) => item.msg).join(", ")
+        : data?.detail || data?.message || "Request failed";
+
+      throw new Error(message);
     }
 
-    throw new Error(data?.detail || "Request failed");
-  }
+    return data as T;
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(
+        "Backend request timed out. Check if the API server is running.",
+      );
+    }
 
-  return data as T;
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export type TokenResponse = {
@@ -104,7 +127,7 @@ export const api = {
       body: JSON.stringify({ remarks }),
     }),
 
-  listMembers: () => request<any[]>("/members"),
+  members: () => request<any[]>("/members"),
 
   createMember: (payload: {
     name: string;

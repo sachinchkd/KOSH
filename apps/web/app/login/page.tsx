@@ -21,6 +21,8 @@ export default function LoginPage() {
   async function handleGoogleSuccess(response: CredentialResponse) {
     setError(null);
 
+    console.log("Google response:", response);
+
     if (!response.credential) {
       setError("Google sign-in failed. No credential was returned.");
       return;
@@ -29,10 +31,18 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      console.log("Calling backend /auth/google...");
       const data = await api.googleLogin(response.credential);
+      console.log("Backend response:", data);
+
+      if (!data?.access_token) {
+        throw new Error("Backend did not return access_token");
+      }
+
       setToken(data.access_token);
       router.replace("/dashboard");
     } catch (err) {
+      console.error("Login failed:", err);
       setError(err instanceof Error ? err.message : "Google login failed");
     } finally {
       setLoading(false);
@@ -53,6 +63,10 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
+              size="large"
+              text="signin_with"
+              shape="rectangular"
+              logo_alignment="left"
               onError={() =>
                 setError("Google sign-in was cancelled or failed.")
               }
