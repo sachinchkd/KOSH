@@ -2,11 +2,16 @@
   "name": "coop-saving-app",
   "private": true,
   "scripts": {
+    "dev": "concurrently -n WEB,API -c auto --kill-others-on-fail \"pnpm dev:web\" \"pnpm dev:api\"",
+    "start": "pnpm dev",
     "dev:web": "pnpm --filter web dev",
     "build:web": "pnpm --filter web build",
     "lint:web": "pnpm --filter web lint",
     "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload",
     "seed:api": "cd apps/api && uv run python -m app.seed"
   },
-  "packageManager": "pnpm@9.12.0"
+  "packageManager": "pnpm@9.12.0",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
 }
