@@ -7,7 +7,7 @@ import { Providers } from "./providers";
 
 
 export const metadata: Metadata = {
-  title: "KOSH",
+  title: "KOSH v1.0",
   description: "Friendly saving management app"
 };
 

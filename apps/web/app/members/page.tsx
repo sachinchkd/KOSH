@@ -56,7 +56,7 @@ export default function MembersPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Members</h1>
         <p className="text-slate-500">
-          Manage the eight KOSH members and admins.
+          Manage the KOSH v1.0 members and admins.
         </p>
       </div>
 

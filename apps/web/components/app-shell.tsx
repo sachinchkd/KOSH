@@ -78,9 +78,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           href="/dashboard"
           className="block rounded-2xl bg-slate-950 p-4 text-white"
         >
-          <div className="text-lg font-bold">KOSH Saving</div>
+          <div className="text-lg font-bold">KOSH Saving v1.0</div>
           <div className="text-sm text-slate-300">
-            NPR 1000 monthly saving
+            Monthly saving
           </div>
         </Link>
 
@@ -120,7 +120,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="border-b border-slate-200 bg-white p-4 lg:hidden">
           <div className="flex items-center justify-between">
             <Link href="/dashboard" className="font-bold">
-              KOSH Saving
+              KOSH Saving v1.0
             </Link>
 
             <Button variant="outline" onClick={logout}>

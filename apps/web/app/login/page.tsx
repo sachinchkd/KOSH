@@ -53,7 +53,7 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
       <Card className="w-full max-w-md text-center text-lg">
         <CardHeader>
-          <CardTitle>KOSH Saving Login</CardTitle>
+          <CardTitle>KOSH v1.0 Saving Login</CardTitle>
           <CardDescription>
             Sign in with your registered Gmail account.
           </CardDescription>
@@ -88,8 +88,7 @@ export default function LoginPage() {
           ) : null}
 
           <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-            Only Gmail accounts listed in the Google Sheet Members tab can
-            access this app.
+            This release is intended for initial testing and feedback. Core features are functional, but improvements may be made as the system is used by members and admins.
           </div>
         </CardContent>
       </Card>
