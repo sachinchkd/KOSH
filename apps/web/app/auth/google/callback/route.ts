@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 const TEMP_TOKEN_KEY = "coop_tmp_token";
+
+function redirectGet(url: string) {
+  return NextResponse.redirect(url, { status: 303 });
+}
+
+// Optional test route
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    message: "Google callback route exists. Google should POST here.",
+  });
+}
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -11,9 +24,7 @@ export async function POST(req: NextRequest) {
   const baseUrl = new URL(req.url).origin;
 
   if (!credential || typeof credential !== "string") {
-    return NextResponse.redirect(
-      `${baseUrl}/login?error=missing_google_credential`,
-    );
+    return redirectGet(`${baseUrl}/login?error=missing_google_credential`);
   }
 
   try {
@@ -27,33 +38,23 @@ export async function POST(req: NextRequest) {
 
     const data = await backendRes.json().catch(() => null);
 
-    if (!backendRes.ok) {
-      console.error("Backend Google login failed:", data);
-
-      return NextResponse.redirect(
-        `${baseUrl}/login?error=backend_login_failed`,
-      );
+    if (!backendRes.ok || !data?.access_token) {
+      return redirectGet(`${baseUrl}/login?error=backend_login_failed`);
     }
 
-    if (!data?.access_token) {
-      return NextResponse.redirect(`${baseUrl}/login?error=no_access_token`);
-    }
+    const res = redirectGet(`${baseUrl}/auth/google/finish`);
 
-    const res = NextResponse.redirect(`${baseUrl}/auth/google/finish`, {
-      status: 303,
-    });
     res.cookies.set(TEMP_TOKEN_KEY, data.access_token, {
       path: "/",
       maxAge: 60,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
       httpOnly: false,
     });
 
     return res;
   } catch (error) {
     console.error("Google callback error:", error);
-
-    return NextResponse.redirect(`${baseUrl}/login?error=server_error`);
+    return redirectGet(`${baseUrl}/login?error=server_error`);
   }
 }
