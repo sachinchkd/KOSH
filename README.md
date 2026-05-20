@@ -1,170 +1,306 @@
-# COOP Saving App
+# KOSH Saving App
 
-A full-stack MVP for a small Nepal-style friendly saving/COOP group. It supports members, monthly NPR 1000 contribution entries, receipt/photo upload, admin approval, dashboard summaries, and optional Google Sheets + Google Drive sync.
+KOSH Saving App is a cooperative monthly saving management system for managing members, monthly contributions, approvals, reports, and Google-based authentication.
 
-## Stack
+The app uses a Next.js frontend, FastAPI backend, Google OAuth login, Google Sheets for data storage, and Google Drive for uploaded receipt/photo storage.
 
-- Frontend: Next.js, React, TypeScript, pnpm, Tailwind CSS, shadcn-style local UI components, TanStack Query, Recharts
-- Backend: FastAPI, uv, SQLAlchemy, Pydantic, Alembic-ready structure
-- Database: SQLite for local development by default, PostgreSQL-ready for production
-- Integrations: Google Sheets API and Google Drive API, optional via environment variables
+---
+
+## Features
+
+- Google Sign-In authentication
+- Member management
+- Monthly saving submission
+- Receipt/photo upload support
+- Admin approval and rejection flow
+- Member-wise total paid tracking
+- Monthly reports
+- Protected dashboard routes
+- Google Sheets data storage
+- Google Drive file storage
+
+---
+
+## Tech Stack
+
+### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- TanStack React Query
+- Google OAuth
+
+### Backend
+
+- FastAPI
+- Python
+- uv
+- Google Sheets API
+- Google Drive API
+- JWT authentication
+
+### Deployment
+
+- Vercel for frontend
+- Render for backend
+- Google Sheets as the database
+- Google Drive for receipt/photo storage
+
+---
 
 ## Project Structure
 
 ```txt
 coop-saving-app/
 ├── apps/
-│   ├── web/     # Next.js frontend
-│   └── api/     # FastAPI backend
-├── docker-compose.yml
-├── pnpm-workspace.yaml
+│   ├── api/
+│   │   ├── app/
+│   │   │   ├── main.py
+│   │   │   ├── routes/
+│   │   │   ├── services/
+│   │   │   └── core/
+│   │   ├── pyproject.toml
+│   │   └── uv.lock
+│   │
+│   └── web/
+│       ├── app/
+│       ├── components/
+│       ├── lib/
+│       ├── package.json
+│       └── next.config.ts
+│
+├── .github/
+│   └── workflows/
+│       └── release.yml
+│
 └── README.md
 ```
 
-## 1. Backend Setup
+---
+
+## Google Sheet Setup
+
+Create a Google Sheet with the following tabs.
+
+### Members Sheet
+
+Tab name:
+
+```txt
+Members
+```
+
+Headers:
+
+```txt
+Member ID | Name | Email | Phone | Role | Joined Date | Status | Total Paid
+```
+
+Example:
+
+```txt
+uuid | name surname | abc@gmail.com | 9800000000 | admin | 2026-05-20 | Active | 0
+```
+
+### Contributions Sheet
+
+Tab name:
+
+```txt
+Contributions
+```
+
+Headers:
+
+```txt
+ID | Member Name | Month | Amount | Payment | Status | URL | Submitted_At | Approved_At | Approved_By | Remarks
+```
+
+
+
+---
+
+## Local Backend Setup
+
+Go to the backend folder:
 
 ```bash
 cd apps/api
-cp .env.example .env
-uv sync
-uv run python -m app.seed
-uv run uvicorn app.main:app --reload
 ```
 
-Backend will run at:
+Install dependencies using uv:
+
+```bash
+uv sync
+```
+
+Run the backend:
+
+```bash
+uv run uvicorn app.main:app --reload --port 8000
+```
+
+Backend URL:
 
 ```txt
 http://localhost:8000
 ```
 
-API docs:
+API base URL:
+
+```txt
+http://localhost:8000/api
+```
+
+FastAPI docs:
 
 ```txt
 http://localhost:8000/docs
 ```
 
-Default admin account after seeding:
+---
 
-```txt
-Email: admin@coop.local
-Password: admin12345
-```
+## Local Frontend Setup
 
-Eight sample members are also created. Their default password is:
-
-```txt
-member12345
-```
-
-## 2. Frontend Setup
-
-Open another terminal:
+Go to the frontend folder:
 
 ```bash
 cd apps/web
-cp .env.example .env.local
+```
+
+Install dependencies:
+
+```bash
 pnpm install
+```
+
+Run the frontend:
+
+```bash
 pnpm dev
 ```
 
-Frontend will run at:
+Frontend URL:
 
 ```txt
 http://localhost:3000
 ```
 
-## 3. Run with PostgreSQL
+---
 
-Start PostgreSQL:
+## Environment Variables
 
-```bash
-docker compose up -d postgres
-```
+### Backend Environment Variables
 
-In `apps/api/.env`, change:
-
-```env
-DATABASE_URL=postgresql+psycopg2://coop:coop_password@localhost:5432/coop_saving
-```
-
-Then seed again:
-
-```bash
-cd apps/api
-uv run python -m app.seed
-```
-
-## 4. Google Sheets + Drive Setup
-
-This app works without Google credentials. To enable Google sync:
-
-1. Create a Google Cloud project.
-2. Enable Google Sheets API and Google Drive API.
-3. Create a Service Account.
-4. Download the service account JSON file.
-5. Create a Google Sheet with tabs:
-   - `Contributions`
-   - `Members`
-   - `Monthly Summary`
-6. Share the Google Sheet with the service account email.
-7. Optional: create a Google Drive folder and share it with the service account email.
-
-Set these in `apps/api/.env`:
-
-```env
-GOOGLE_ENABLED=true
-GOOGLE_SHEET_ID=your_google_sheet_id
-GOOGLE_SERVICE_ACCOUNT_FILE=/absolute/path/to/service-account.json
-GOOGLE_DRIVE_FOLDER_ID=your_drive_folder_id
-```
-
-The `Contributions` tab should have these columns:
+Create this file:
 
 ```txt
-ID | Member Name | Month | Amount | Payment Method | Status | Photo URL | Submitted At | Approved At | Approved By | Remarks
+apps/api/.env
 ```
 
-## 5. Main Features
 
-- Login with JWT
-- Admin/member roles
-- Members list
-- Add members as admin
-- Submit monthly contribution
-- Upload receipt/photo
-- Admin approve/reject
-- Dashboard totals
-- Recent contributions
-- Monthly chart
-- Unpaid member list
-- Optional append to Google Sheets
-- Optional receipt upload to Google Drive
 
-## 6. Useful Commands
+For local development, `GOOGLE_SERVICE_ACCOUNT_FILE` can point to a local JSON file.
 
-Root:
+Do not commit this file:
 
-```bash
-pnpm dev:web
-pnpm dev:api
+```txt
+service-account.json
 ```
 
-Backend:
+### Frontend Environment Variables
 
-```bash
-cd apps/api
-uv run uvicorn app.main:app --reload
-uv run python -m app.seed
+Create this file:
+
+```txt
+apps/web/.env.local
 ```
 
-Frontend:
+Example for local development:
 
-```bash
-cd apps/web
-pnpm dev
-pnpm build
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 ```
 
-## 7. Notes
+Example for production:
 
-For production, use PostgreSQL instead of SQLite and set a strong `SECRET_KEY` in the backend `.env` file.
+```env
+NEXT_PUBLIC_API_URL=https://your-render-backend-url.onrender.com/api
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+```
+
+---
+
+## Google OAuth Setup
+
+Go to:
+
+```txt
+Google Cloud Console → APIs & Services → Credentials
+```
+
+Create or open your OAuth Client ID.
+
+Add these to **Authorized JavaScript origins**:
+
+```txt
+http://localhost:3000
+https://your-vercel-domain.vercel.app
+https://your-custom-domain.com
+```
+
+Do not add paths.
+
+Correct:
+
+```txt
+https://your-custom-domain.com
+```
+
+Wrong:
+
+```txt
+https://your-custom-domain.com/login
+```
+
+---
+
+## Google Service Account Setup
+
+1. Create a Google Cloud service account.
+2. Enable the Google Sheets API.
+3. Enable the Google Drive API.
+4. Download the service account JSON file.
+5. Share your Google Sheet with the service account email.
+6. Share your Google Drive folder with the service account email.
+
+The service account email looks like this:
+
+```txt
+something@project-id.iam.gserviceaccount.com
+```
+
+Give the service account editor access to the Google Sheet and Google Drive folder.
+
+---
+
+
+
+
+## Security Notes
+
+- Never commit `.env` files.
+- Never commit `service-account.json`.
+- Store secrets in Render environment variables.
+- Store frontend public variables only in Vercel.
+- Google service account JSON belongs only on the backend.
+- JWT secret belongs only on the backend.
+
+---
+
+## License
+
+Private project for KOSH Saving members.
