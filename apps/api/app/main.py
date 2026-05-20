@@ -17,9 +17,9 @@ app = FastAPI(title="KOSH Saving API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
+        
         "https://koshsaving.com",
-        "https://www.koshsaving.com",
+        "https://kosh-web-chi.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
