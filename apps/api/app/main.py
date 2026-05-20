@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import auth, contributions, dashboard, members, reports
 from app.core.config import get_settings
+
 from app.db.session import Base, engine
 import app.models  # noqa: F401
 
