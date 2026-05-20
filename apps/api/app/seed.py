@@ -6,14 +6,14 @@ from app.models.user import User
 settings = get_settings()
 
 SAMPLE_MEMBERS = [
-    ("Aarav Sharma", "aarav@coop.local", "9800000001"),
-    ("Sita Thapa", "sita@coop.local", "9800000002"),
-    ("Bikash Gurung", "bikash@coop.local", "9800000003"),
-    ("Nisha Rai", "nisha@coop.local", "9800000004"),
-    ("Ramesh Karki", "ramesh@coop.local", "9800000005"),
-    ("Mina Lama", "mina@coop.local", "9800000006"),
-    ("Prakash KC", "prakash@coop.local", "9800000007"),
-    ("Anita Magar", "anita@coop.local", "9800000008"),
+    ("Aarav Sharma", "aarav@coop.com", "9800000001"),
+    ("Sita Thapa", "sita@coop.com", "9800000002"),
+    ("Bikash Gurung", "bikash@coop.com", "9800000003"),
+    ("Nisha Rai", "nisha@coop.com", "9800000004"),
+    ("Ramesh Karki", "ramesh@coop.com", "9800000005"),
+    ("Mina Lama", "mina@coop.com", "9800000006"),
+    ("Prakash KC", "prakash@coop.com", "9800000007"),
+    ("Anita Magar", "anita@coop.com", "9800000008"),
 ]
 
 
