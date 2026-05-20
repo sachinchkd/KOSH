@@ -25,12 +25,11 @@ export default function MembersPage() {
   const createMember = useMutation({
     mutationFn: () => api.createMember({ name, email, phone, role }),
     onSuccess: () => {
-      setName("");
-      setEmail("");
-      setPhone("");
-      
-      queryClient.invalidateQueries({ queryKey: ["members"] });
-    },
+  setName("");
+  setEmail("");
+  setPhone("");
+  queryClient.invalidateQueries({ queryKey: ["members"] });
+},
     onError: (err) => setFormError(err instanceof Error ? err.message : "Could not create member")
   });
 

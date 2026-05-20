@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -------------------------
+      # Setup Node for Next.js app
+      # -------------------------
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm --filter web build
+
+      # -------------------------
+      # Setup Python uv for API
+      # -------------------------
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: uv sync --frozen
+
+      - name: Check API imports
+        working-directory: apps/api
+        run: uv run python -m compileall app
+
+      # -------------------------
+      # Package release files
+      # -------------------------
+      - name: Create release package
+        run: |
+          mkdir -p release
+          zip -r release/kosh-source.zip . \
+            -x "node_modules/*" \
+            -x ".git/*" \
+            -x ".next/*" \
+            -x "apps/web/.next/*" \
+            -x "apps/api/.venv/*" \
+            -x "**/__pycache__/*" \
+            -x "**/.env*" \
+            -x "**/service-account.json"
+
+      # -------------------------
+      # Create GitHub Release
+      # -------------------------
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/kosh-source.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
