@@ -44,7 +44,7 @@ export default function MembersPage() {
     <AppShell>
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Members</h1>
-        <p className="text-slate-500">Manage the eight COOP members and admins.</p>
+        <p className="text-slate-500">Manage the eight KOSH members and admins.</p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">

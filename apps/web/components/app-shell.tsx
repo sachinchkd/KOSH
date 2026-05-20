@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-slate-50">
       <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-slate-200 bg-white p-5 lg:block">
         <Link href="/dashboard" className="block rounded-2xl bg-slate-950 p-4 text-white">
-          <div className="text-lg font-bold">COOP Saving</div>
+          <div className="text-lg font-bold">KOSH Saving</div>
           <div className="text-sm text-slate-300">NPR 1000 monthly saving</div>
         </Link>
 
@@ -81,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="lg:pl-72">
         <div className="border-b border-slate-200 bg-white p-4 lg:hidden">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="font-bold">COOP Saving</Link>
+            <Link href="/dashboard" className="font-bold">KOSH Saving</Link>
             <Button variant="outline" onClick={logout}>Logout</Button>
           </div>
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">

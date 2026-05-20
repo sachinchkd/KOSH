@@ -1,18 +1,22 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+
+const TOKEN_KEY = "coop_token";
 
 let token: string | null = null;
 
 export function setToken(value: string | null) {
   token = value;
 
-  if (typeof window !== "undefined") {
-    if (value) {
-      localStorage.setItem("coop_token", value);
-      document.cookie = `coop_token=${value}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
-    } else {
-      localStorage.removeItem("coop_token");
-      document.cookie = "coop_token=; path=/; max-age=0; SameSite=Lax";
-    }
+  if (typeof window === "undefined") return;
+
+  if (value) {
+    localStorage.setItem(TOKEN_KEY, value);
+    document.cookie = `${TOKEN_KEY}=${encodeURIComponent(value)}; path=/; max-age=${
+      60 * 60 * 24 * 7
+    }; SameSite=Lax`;
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+    document.cookie = `${TOKEN_KEY}=; path=/; max-age=0; SameSite=Lax`;
   }
 }
 
@@ -20,10 +24,18 @@ export function getToken() {
   if (token) return token;
 
   if (typeof window !== "undefined") {
-    token = localStorage.getItem("coop_token");
+    token = localStorage.getItem(TOKEN_KEY);
   }
 
   return token;
+}
+
+export function clearToken() {
+  setToken(null);
+}
+
+export function isLoggedIn() {
+  return Boolean(getToken());
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -47,6 +59,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      clearToken();
+    }
+
     throw new Error(data?.detail || "Request failed");
   }
 
@@ -65,7 +81,42 @@ export const api = {
       body: JSON.stringify({ credential }),
     }),
 
+  me: () => request<any>("/auth/me"),
+
   dashboard: () => request<any>("/dashboard/summary"),
 
-  me: () => request<any>("/auth/me"),
+  contributions: () => request<any[]>("/contributions"),
+
+  createContribution: (formData: FormData) =>
+    request<any>("/contributions", {
+      method: "POST",
+      body: formData,
+    }),
+
+  approveContribution: (id: string) =>
+    request<any>(`/contributions/${id}/approve`, {
+      method: "PATCH",
+    }),
+
+  rejectContribution: (id: string, remarks?: string) =>
+    request<any>(`/contributions/${id}/reject`, {
+      method: "PATCH",
+      body: JSON.stringify({ remarks }),
+    }),
+
+  listMembers: () => request<any[]>("/members"),
+
+  createMember: (payload: {
+    name: string;
+    email: string;
+    phone?: string;
+    role?: string;
+  }) =>
+    request<any>("/members", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  monthlyReport: (month: string) =>
+    request<any>(`/reports/monthly?month=${encodeURIComponent(month)}`),
 };

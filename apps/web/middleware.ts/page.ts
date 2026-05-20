@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+const TOKEN_KEY = "coop_token";
+
 const protectedRoutes = [
   "/dashboard",
   "/members",
@@ -8,31 +10,25 @@ const protectedRoutes = [
 ];
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const token = request.cookies.get("coop_token")?.value;
+  const pathname = request.nextUrl.pathname;
+  const token = request.cookies.get(TOKEN_KEY)?.value;
 
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route),
   );
 
-  if (isProtectedRoute && !token) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+  if (pathname === "/") {
+    return NextResponse.redirect(
+      new URL(token ? "/dashboard" : "/login", request.url),
+    );
   }
 
   if (pathname === "/login" && token) {
-    const dashboardUrl = new URL("/dashboard", request.url);
-    return NextResponse.redirect(dashboardUrl);
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (pathname === "/" && token) {
-    const dashboardUrl = new URL("/dashboard", request.url);
-    return NextResponse.redirect(dashboardUrl);
-  }
-
-  if (pathname === "/" && !token) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+  if (isProtectedRoute && !token) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();

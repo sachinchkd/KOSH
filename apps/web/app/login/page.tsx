@@ -41,9 +41,9 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md text-center text-lg">
         <CardHeader>
-          <CardTitle>COOP Saving Login</CardTitle>
+          <CardTitle>KOSH Saving Login</CardTitle>
           <CardDescription>
             Sign in with your registered Gmail account.
           </CardDescription>
@@ -53,8 +53,11 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => setError("Google sign-in was cancelled or failed.")}
-              useOneTap
+              onError={() =>
+                setError("Google sign-in was cancelled or failed.")
+              }
+              useOneTap={false}
+              use_fedcm_for_prompt={false}
             />
           </div>
 
@@ -71,7 +74,8 @@ export default function LoginPage() {
           ) : null}
 
           <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-            Only Gmail accounts listed in the Google Sheet Members tab can access this app.
+            Only Gmail accounts listed in the Google Sheet Members tab can
+            access this app.
           </div>
         </CardContent>
       </Card>

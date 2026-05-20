@@ -7,22 +7,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "COOP Saving API"
     environment: str = "development"
+
     secret_key: str = "change-this-secret-in-production"
     access_token_expire_minutes: int = 60 * 24 * 7
 
     database_url: str = "sqlite:///./coop.db"
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: str = "http://localhost:3000"
+
     auto_create_tables: bool = True
 
     upload_dir: str = "uploads"
     public_upload_base_url: str = "http://localhost:8000/uploads"
     monthly_saving_amount: int = 1000
 
-    admin_email: str = "admin@coopapp.com"
-    admin_password: str = "admin12345"
+    
 
     google_client_id: str | None = None
+
     google_admin_emails: str = ""
+
     google_enabled: bool = False
     google_sheet_id: str | None = None
     google_service_account_file: str | None = None
@@ -36,12 +39,14 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("cors_origins",  mode="before")
-    @classmethod
-    def parse_cors_list(cls, value):
-        if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
-        return value
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
+
     
     @property
     def google_admin_email_list(self) -> list[str]:
