@@ -68,7 +68,7 @@ export default function LoginPage() {
               shape="rectangular"
               logo_alignment="left"
               ux_mode="redirect"
-              login_uri="https://kosh-web-chi.vercel.app/api/auth/google/callback"
+              login_uri="https://kosh-web-chi.vercel.app/auth/google/callback"
               onError={() =>
                 setError("Google sign-in was cancelled or failed.")
               }
