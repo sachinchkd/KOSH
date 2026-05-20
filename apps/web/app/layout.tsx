@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import { Providers } from "./providers/page";
+import { Providers } from "./providers";
 
 
 
