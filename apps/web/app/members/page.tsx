@@ -18,17 +18,17 @@ export default function MembersPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("member12345");
+ 
   const [role, setRole] = useState("member");
   const [formError, setFormError] = useState<string | null>(null);
 
   const createMember = useMutation({
-    mutationFn: () => api.createMember({ name, email, phone, password, role }),
+    mutationFn: () => api.createMember({ name, email, phone, role }),
     onSuccess: () => {
       setName("");
       setEmail("");
       setPhone("");
-      setPassword("member12345");
+      
       queryClient.invalidateQueries({ queryKey: ["members"] });
     },
     onError: (err) => setFormError(err instanceof Error ? err.message : "Could not create member")
@@ -100,10 +100,7 @@ export default function MembersPage() {
                 <Label>Phone</Label>
                 <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
-              <div className="space-y-2">
-                <Label>Password</Label>
-                <Input value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
-              </div>
+              
               <div className="space-y-2">
                 <Label>Role</Label>
                 <Select value={role} onChange={(e) => setRole(e.target.value)}>
