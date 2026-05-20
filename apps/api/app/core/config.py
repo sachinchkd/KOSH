@@ -1,5 +1,4 @@
 from functools import lru_cache
-from typing import List
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,9 +18,11 @@ class Settings(BaseSettings):
     public_upload_base_url: str = "http://localhost:8000/uploads"
     monthly_saving_amount: int = 1000
 
-    admin_email: str = "admin@coop.local"
+    admin_email: str = "admin@coopapp.com"
     admin_password: str = "admin12345"
 
+    google_client_id: str | None = None
+    google_admin_emails: str = ""
     google_enabled: bool = False
     google_sheet_id: str | None = None
     google_service_account_file: str | None = None
@@ -29,16 +30,31 @@ class Settings(BaseSettings):
     google_drive_folder_id: str | None = None
     google_drive_public_links: bool = False
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins",  mode="before")
     @classmethod
-    def parse_cors_origins(cls, value):
+    def parse_cors_list(cls, value):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+    
+    @property
+    def google_admin_email_list(self) -> list[str]:
+        return [
+            email.strip().lower()
+            for email in self.google_admin_emails.split(",")
+            if email.strip()
+        ]
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+settings = get_settings()

@@ -11,3 +11,4 @@ uploads
 .DS_Store
 service-account.json
 *.json
+*.rar
