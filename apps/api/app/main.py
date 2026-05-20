@@ -17,13 +17,12 @@ app = FastAPI(title="KOSH Saving API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        
-        "https://koshsaving.com",
-        "https://kosh-web-chi.vercel.app",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    "http://localhost:3000",
+    "https://kosh-web-chi.vercel.app",
+    "https://sachinchakradhar.com.np",
+    "https://www.sachinchakradhar.com.np",
+]
+    
 )
 
 if settings.auto_create_tables:
