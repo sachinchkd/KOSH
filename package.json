@@ -12,6 +12,7 @@
     "setup:api": "cd apps/api && uv sync",
     "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload",
     "seed:api": "cd apps/api && uv run python -m app.seed"
+
   },
   "packageManager": "pnpm@9.12.0",
   "devDependencies": {

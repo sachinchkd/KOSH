@@ -9,3 +9,5 @@ __pycache__
 coop.db
 uploads
 .DS_Store
+service-account.json
+*.json

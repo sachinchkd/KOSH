@@ -1,7 +1,8 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: coop-saving-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: coop_saving
       POSTGRES_USER: coop
@@ -9,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - coop_postgres_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  coop_postgres_data:
