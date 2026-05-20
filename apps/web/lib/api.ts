@@ -130,16 +130,15 @@ export const api = {
   members: () => request<any[]>("/members"),
 
   createMember: (payload: {
-  name: string;
-  email: string;
-  phone?: string;
-  password?: string;
-  role?: string;
-}) =>
-  request<any>("/members", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  }),
+    name: string;
+    email: string;
+    phone?: string;
+    role?: string;
+  }) =>
+    request<any>("/members", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
   monthlyReport: (month: string) =>
     request<any>(`/reports/monthly?month=${encodeURIComponent(month)}`),

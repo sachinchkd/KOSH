@@ -12,9 +12,38 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { currentMonth, formatNpr } from "@/lib/utils";
 
+type MonthlyReportRow = {
+  id: string;
+  member_name: string;
+  amount: number;
+  status: string;
+  month?: string;
+  payment?: string;
+  payment_method?: string;
+  submitted_at?: string;
+  approved_at?: string;
+  approved_by?: string;
+  remarks?: string;
+  url?: string;
+  photo_url?: string;
+};
+
+type MonthlyReportData = {
+  month: string;
+  rows: MonthlyReportRow[];
+  total_amount?: number;
+  approved_amount?: number;
+  pending_amount?: number;
+  rejected_amount?: number;
+};
+
 export default function MonthlyReportPage() {
   const [month, setMonth] = useState(currentMonth());
-  const { data, isLoading, error } = useQuery({ queryKey: ["monthly-report", month], queryFn: () => api.monthlyReport(month) });
+
+  const { data, isLoading, error } = useQuery<MonthlyReportData>({
+    queryKey: ["monthly-report", month],
+    queryFn: () => api.monthlyReport(month),
+  });
 
   return (
     <AppShell>
@@ -25,24 +54,43 @@ export default function MonthlyReportPage() {
 
       <div className="mb-6 max-w-xs space-y-2">
         <Label>Month</Label>
-        <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+        <Input
+          type="month"
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+        />
       </div>
 
       {isLoading ? <p>Loading...</p> : null}
-      {error ? <p className="text-red-600">{error instanceof Error ? error.message : "Failed to load"}</p> : null}
+
+      {error ? (
+        <p className="text-red-600">
+          {error instanceof Error ? error.message : "Failed to load"}
+        </p>
+      ) : null}
 
       {data ? (
         <>
           <div className="mb-6 grid gap-4 md:grid-cols-3">
-            <StatCard title="Approved" value={formatNpr(data.approved)} />
-            <StatCard title="Pending" value={formatNpr(data.pending)} />
-            <StatCard title="Rejected" value={formatNpr(data.rejected)} />
+            <StatCard
+              title="Approved"
+              value={formatNpr(data.approved_amount ?? 0)}
+            />
+            <StatCard
+              title="Pending"
+              value={formatNpr(data.pending_amount ?? 0)}
+            />
+            <StatCard
+              title="Rejected"
+              value={formatNpr(data.rejected_amount ?? 0)}
+            />
           </div>
 
           <Card>
             <CardHeader>
               <CardTitle>Rows</CardTitle>
             </CardHeader>
+
             <CardContent className="overflow-x-auto p-0">
               <Table>
                 <THead>
@@ -55,17 +103,41 @@ export default function MonthlyReportPage() {
                     <TH>Receipt</TH>
                   </TR>
                 </THead>
+
                 <TBody>
-                  {data.rows.map((row) => (
-                    <TR key={row.id}>
-                      <TD>{row.member_name}</TD>
-                      <TD>{formatNpr(row.amount)}</TD>
-                      <TD>{row.payment_method}</TD>
-                      <TD><StatusBadge status={row.status} /></TD>
-                      <TD>{new Date(row.submitted_at).toLocaleDateString()}</TD>
-                      <TD>{row.photo_url ? <a className="underline" href={row.photo_url} target="_blank">View</a> : "-"}</TD>
-                    </TR>
-                  ))}
+                  {data.rows.map((row) => {
+                    const receiptUrl = row.photo_url || row.url;
+                    const paymentMethod = row.payment_method || row.payment || "-";
+                    const submittedDate = row.submitted_at
+                      ? new Date(row.submitted_at).toLocaleDateString()
+                      : "-";
+
+                    return (
+                      <TR key={row.id}>
+                        <TD>{row.member_name}</TD>
+                        <TD>{formatNpr(row.amount)}</TD>
+                        <TD>{paymentMethod}</TD>
+                        <TD>
+                          <StatusBadge status={row.status || "Pending"} />
+                        </TD>
+                        <TD>{submittedDate}</TD>
+                        <TD>
+                          {receiptUrl ? (
+                            <a
+                              className="underline"
+                              href={receiptUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              View
+                            </a>
+                          ) : (
+                            "-"
+                          )}
+                        </TD>
+                      </TR>
+                    );
+                  })}
                 </TBody>
               </Table>
             </CardContent>
