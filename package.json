@@ -1,0 +1,12 @@
+{
+  "name": "coop-saving-app",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "build:web": "pnpm --filter web build",
+    "lint:web": "pnpm --filter web lint",
+    "dev:api": "cd apps/api && uv run uvicorn app.main:app --reload",
+    "seed:api": "cd apps/api && uv run python -m app.seed"
+  },
+  "packageManager": "pnpm@9.12.0"
+}
